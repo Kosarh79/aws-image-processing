@@ -1,3 +1,4 @@
+
 // dependencies
 var async = require('async');
 var path = require('path');
@@ -85,7 +86,7 @@ exports.handler = function(event, context) {
                 console.log("Conversion");
                 gm(response.Body).antialias(true).density(
                     300).toBuffer('JPG', function(err,
-                    buffer) {
+                                                  buffer) {
                     if (err) {
                         //next(err);
                         next(err);
@@ -131,7 +132,7 @@ exports.handler = function(event, context) {
                     //this.resize({width: width, height: height, format: 'jpg',})
                     this.resize(width, height).toBuffer(
                         'JPG', function(err,
-                            buffer) {
+                                        buffer) {
                             if (err) {
                                 //next(err);
                                 next(err);
@@ -158,9 +159,9 @@ exports.handler = function(event, context) {
                 s3.putObject({
                     Bucket: dstBucket,
                     Key: "images/" + _sizesArray[
-                            index].destinationPath +
-                        "/" + fileName.slice(0, -4) +
-                        ".jpg",
+                        index].destinationPath +
+                    "/" + fileName.slice(0, -4) +
+                    ".jpg",
                     Body: data,
                     ContentType: 'JPG'
                 }, next);

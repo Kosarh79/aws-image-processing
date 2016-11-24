@@ -1,5 +1,7 @@
 .tmp
 dist
 node_modules
-.idea/
+.idea
 
+.tmp.js
+*.zip
