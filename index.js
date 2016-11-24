@@ -10,40 +10,44 @@ var util = require('util');
 var s3 = new AWS.S3();
 exports.handler = function(event, context) {
     // Read options from the event.
-    //console.log("Reading options from event:\n", util.inspect(event, {
-    //    depth: 5
-    //}));
+    console.log("Reading options from event:\n", util.inspect(event, {
+        depth: 5
+    }));
     var srcBucket = event.Records[0].s3.bucket.name;
     // Object key may have spaces or unicode non-ASCII characters.
     var srcKey = decodeURIComponent(event.Records[0].s3.object.key.replace(
         /\+/g, " "));
     var dstBucket = srcBucket;
-
-    var large = {
+    // Sanity check: validate that source and destination are different buckets.
+    // if (srcBucket == dstBucket) {
+    //     console.error("Destination bucket must not match source bucket.");
+    //     return;
+    //  }
+    var _800px = {
         width: 866.6,
         dstnKey: srcKey,
         destinationPath: "large"
     };
-    var medium = {
+    var _500px = {
         width: 670.6,
         dstnKey: srcKey,
         destinationPath: "medium"
     };
-    var small = {
+    var _200px = {
         width: 474.6,
         dstnKey: srcKey,
         destinationPath: "small"
     };
-    var thumbnail = {
+    var _45px = {
         width: 98,
         dstnKey: srcKey,
         destinationPath: "thumbnail"
     };
-    var _sizesArray = [large, medium, small, thumbnail];
+    var _sizesArray = [_800px, _500px, _200px, _45px];
     var len = _sizesArray.length;
-    //console.log(len);
-    //console.log(srcBucket);
-    //console.log(srcKey);
+    console.log(len);
+    console.log(srcBucket);
+    console.log(srcKey);
     // Infer the image type.
     var typeMatch = srcKey.match(/\.([^.]*)$/);
     var fileName = path.basename(srcKey);
@@ -54,7 +58,7 @@ exports.handler = function(event, context) {
     var imageType = typeMatch[1].toLowerCase();
     if (imageType != "jpg" && imageType != "gif" && imageType != "png" &&
         imageType != "eps") {
-        //console.log('skipping non-image ' + srcKey);
+        console.log('skipping non-image ' + srcKey);
         return;
     }
     // Transform, and upload to same S3 bucket but to a different S3 bucket.
@@ -62,8 +66,8 @@ exports.handler = function(event, context) {
         async.waterfall([
 
             function download(next) {
-               // console.time("downloadImage");
-               // console.log("download");
+                console.time("downloadImage");
+                console.log("download");
                 // Download the image from S3 into a buffer.
                 // sadly it downloads the image several times, but we couldn't place it outside
                 // the variable was not recognized
@@ -112,17 +116,17 @@ exports.handler = function(event, context) {
                         size.width, _sizesArray[
                             key].width / size.height
                     );
-                    //console.log("run " + key +
-                    //    " scalingFactor : " +
-                    //    scalingFactor);
+                    console.log("run " + key +
+                        " scalingFactor : " +
+                        scalingFactor);
                     var width = scalingFactor *
                         size.width;
                     var height = scalingFactor *
                         size.height;
-                    //console.log("run " + key +
-                    //    " width : " + width);
-                    //console.log("run " + key +
-                    //    " height : " + height);
+                    console.log("run " + key +
+                        " width : " + width);
+                    console.log("run " + key +
+                        " height : " + height);
                     var index = key;
                     //this.resize({width: width, height: height, format: 'jpg',})
                     this.resize(width, height).toBuffer(
@@ -145,11 +149,11 @@ exports.handler = function(event, context) {
             },
             function upload(data, index, next) {
                 console.time("uploadImage");
-                //console.log("upload : " + index);
-                //console.log("upload to path : /images/" +
-                //    _sizesArray[index].destinationPath +
-                //    "/" + fileName.slice(0, -4) +
-                //    ".jpg");
+                console.log("upload : " + index);
+                console.log("upload to path : /images/" +
+                    _sizesArray[index].destinationPath +
+                    "/" + fileName.slice(0, -4) +
+                    ".jpg");
                 // Stream the transformed image to a different folder.
                 s3.putObject({
                     Bucket: dstBucket,
@@ -169,7 +173,7 @@ exports.handler = function(event, context) {
                 console.error(err);
             }
             // result now equals 'done'
-          //  console.log("End of step " + key);
+            console.log("End of step " + key);
             callback();
         });
     }, function(err) {
