@@ -1,4 +1,3 @@
-
 // dependencies
 var async = require('async');
 var path = require('path');
@@ -11,9 +10,9 @@ var util = require('util');
 var s3 = new AWS.S3();
 exports.handler = function(event, context) {
     // Read options from the event.
-    console.log("Reading options from event:\n", util.inspect(event, {
-        depth: 5
-    }));
+    // console.log("Reading options from event:\n", util.inspect(event, {
+    //     depth: 5
+    // }));
     var srcBucket = event.Records[0].s3.bucket.name;
     // Object key may have spaces or unicode non-ASCII characters.
     var srcKey = decodeURIComponent(event.Records[0].s3.object.key.replace(
@@ -24,31 +23,32 @@ exports.handler = function(event, context) {
     //     console.error("Destination bucket must not match source bucket.");
     //     return;
     //  }
-    var _800px = {
+    var large = {
         width: 866.6,
         dstnKey: srcKey,
         destinationPath: "large"
     };
-    var _500px = {
+    var medium = {
         width: 670.6,
         dstnKey: srcKey,
         destinationPath: "medium"
     };
-    var _200px = {
+    var small = {
         width: 474.6,
         dstnKey: srcKey,
         destinationPath: "small"
     };
-    var _45px = {
+    var thumbnail = {
         width: 98,
+        height:98,
         dstnKey: srcKey,
         destinationPath: "thumbnail"
     };
-    var _sizesArray = [_800px, _500px, _200px, _45px];
+    var _sizesArray = [large, medium, small, thumbnail];
     var len = _sizesArray.length;
-    console.log(len);
-    console.log(srcBucket);
-    console.log(srcKey);
+    // console.log(len);
+    // console.log(srcBucket);
+    // console.log(srcKey);
     // Infer the image type.
     var typeMatch = srcKey.match(/\.([^.]*)$/);
     var fileName = path.basename(srcKey);
@@ -67,8 +67,8 @@ exports.handler = function(event, context) {
         async.waterfall([
 
             function download(next) {
-                console.time("downloadImage");
-                console.log("download");
+              //  console.time("downloadImage");
+              //  console.log("download");
                 // Download the image from S3 into a buffer.
                 // sadly it downloads the image several times, but we couldn't place it outside
                 // the variable was not recognized
@@ -76,14 +76,14 @@ exports.handler = function(event, context) {
                     Bucket: srcBucket,
                     Key: srcKey
                 }, next);
-                console.timeEnd("downloadImage");
+              //  console.timeEnd("downloadImage");
             },
             function convert(response, next) {
                 // convert eps images to png
-                console.time("convertImage");
-                console.log("Reponse content type : " +
-                    response.ContentType);
-                console.log("Conversion");
+               // console.time("convertImage");
+                //console.log("Reponse content type : " +
+                   // response.ContentType);
+               // console.log("Conversion");
                 gm(response.Body).antialias(true).density(
                     300).toBuffer('JPG', function(err,
                                                   buffer) {
@@ -91,44 +91,40 @@ exports.handler = function(event, context) {
                         //next(err);
                         next(err);
                     } else {
-                        console.timeEnd(
-                            "convertImage");
+                      //  console.timeEnd(
+                       //     "convertImage");
                         next(null, buffer);
                         //next(null, 'done');
                     }
                 });
             },
             function process(response, next) {
-                console.log("process image");
-                console.time("processImage");
+             //   console.log("process image");
+              //  console.time("processImage");
                 // Transform the image buffer in memory.
                 //gm(response.Body).size(function(err, size) {
-                gm(response).size(function(err, size) {
-                    //console.log("buf content type " + buf.ContentType);
+                gm(response).autoOrient().size(function(err, size) {
+                    var index, width, height, scalingFactor;
                     // Infer the scaling factor to avoid stretching the image unnaturally.
-                    console.log("run " + key +
-                        " size array: " +
-                        _sizesArray[key].width);
-                    console.log("run " + key +
-                        " size : " + size);
-                    console.log(err);
-                    var scalingFactor = Math.min(
-                        _sizesArray[key].width /
-                        size.width, _sizesArray[
-                            key].width / size.height
-                    );
-                    console.log("run " + key +
-                        " scalingFactor : " +
-                        scalingFactor);
-                    var width = scalingFactor *
-                        size.width;
-                    var height = scalingFactor *
-                        size.height;
-                    console.log("run " + key +
-                        " width : " + width);
-                    console.log("run " + key +
-                        " height : " + height);
-                    var index = key;
+                    if(_sizesArray[key].destinationPath === 'thumbnail'){
+                        if(size.width >= size.height){
+                            height = _sizesArray[key].height;
+                            width = null;
+                        }
+                        else{
+                            width = _sizesArray[key].width;
+                            height = null;
+                        }
+                    }
+                    else{
+                        scalingFactor = Math.min(
+                            _sizesArray[key].width / size.width, _sizesArray[key].width / size.height
+                        );
+
+                        width = scalingFactor * size.width;
+                        height = scalingFactor * size.height;
+                    }
+                    index = key;
                     //this.resize({width: width, height: height, format: 'jpg',})
                     this.resize(width, height).toBuffer(
                         'JPG', function(err,
@@ -137,9 +133,9 @@ exports.handler = function(event, context) {
                                 //next(err);
                                 next(err);
                             } else {
-                                console.timeEnd(
-                                    "processImage"
-                                );
+                              //  console.timeEnd(
+                              //      "processImage"
+                              //  );
                                 next(null,
                                     buffer,
                                     key);
@@ -149,12 +145,12 @@ exports.handler = function(event, context) {
                 });
             },
             function upload(data, index, next) {
-                console.time("uploadImage");
-                console.log("upload : " + index);
-                console.log("upload to path : /images/" +
-                    _sizesArray[index].destinationPath +
-                    "/" + fileName.slice(0, -4) +
-                    ".jpg");
+               // console.time("uploadImage");
+              //  console.log("upload : " + index);
+              //  console.log("upload to path : /images/" +
+                 //   _sizesArray[index].destinationPath +
+                 //   "/" + fileName.slice(0, -4) +
+                 //   ".jpg");
                 // Stream the transformed image to a different folder.
                 s3.putObject({
                     Bucket: dstBucket,
@@ -162,12 +158,12 @@ exports.handler = function(event, context) {
                     //        index].destinationPath +
                     //    "/" + fileName.slice(0, -4) +
                     //    ".jpg",
-                    Key: "images/" + fileName.slice(0, -4) +
-                    ".jpg_" + _sizesArray[index].destinationPath,
+                    Key: "transcodedimages/" + fileName.slice(0, -4) + '_' +
+                    _sizesArray[index].destinationPath + ".jpg",
                     Body: data,
                     ContentType: 'JPG'
                 }, next);
-                console.timeEnd("uploadImage");
+              //  console.timeEnd("uploadImage");
             }
         ], function(err, result) {
             if (err) {
