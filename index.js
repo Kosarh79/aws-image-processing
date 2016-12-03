@@ -24,12 +24,12 @@ exports.handler = function(event, context) {
     //     return;
     //  }
     var large = {
-        width: 866.6,
+        width: 1440,
         dstnKey: srcKey,
         destinationPath: "large"
     };
     var medium = {
-        width: 670.6,
+        width:866.6,
         dstnKey: srcKey,
         destinationPath: "medium"
     };
