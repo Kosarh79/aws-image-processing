@@ -1,50 +1,34 @@
-// dependencies
+/** environment variables functionName, region*/
+
 var async = require('async');
 var path = require('path');
 var AWS = require('aws-sdk');
-var https = require('https');
-var querystring = require('querystring');
 var gm = require('gm').subClass({
     imageMagick: true
 });
 var util = require('util');
-// get reference to S3 client
 var s3 = new AWS.S3();
-var querystring = require('querystring');
-var notifySonicspan = function(filename){
-    console.log('~~~~~~~ Notfying Sonicspan ......');
-    var post_data = querystring.stringify({
-        'email' : process.env.email,
-        'password': process.env.password,
-        'filename': filename
-    });
-    var options = {
-        host: "malayerdev.herokuapp.com",
-        path: "/api/aws/trans",
-        port:443,
-        method: "POST",
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': Buffer.byteLength(post_data)
-        }
-    };
-    var req = https.request(options, function(res) {
-        console.log('STATUS: ' + res.statusCode);
-        console.log('HEADERS: ' + JSON.stringify(res.headers));
-        res.setEncoding('utf8');
-        res.on('data', function (chunk) {
-            console.log('BODY: ' + chunk);
-            context.done();
-        });
 
+function notifySonicspan(fileName, context){
+    var lambda = new AWS.Lambda({
+        region: process.env.region
     });
-    req.on('error', function(e) {
-        console.log('problem with request: ' + e.message);
+    console.log('....notifying sonicspan from imgresize');
+    var params = {
+        FunctionName: process.env.functionName,
+        Payload: JSON.stringify({"data": fileName})
+    };
+    lambda.invoke(params, function(error, data) {
+        if (error) {
+            console.log('Error on notifying... ' + error);
+            context.done('error', error);
+        }
+        if(data.Payload){
+            context.succeed(data.Payload)
+        }
     });
-    // post the data
-    req.write(post_data);
-    req.end();
-};
+}
+
 exports.handler = function(event, context) {
     // Read options from the event.
     // console.log("Reading options from event:\n", util.inspect(event, {
@@ -222,7 +206,7 @@ exports.handler = function(event, context) {
             console.log('---->Successfully resized ' + srcBucket +
                 ' and uploaded to' + dstBucket + "/images");
         }
+        /** Notify Sonicspan */
         notifySonicspan(fileName, context);
-
     });
 };
