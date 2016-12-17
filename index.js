@@ -9,6 +9,10 @@ var gm = require('gm').subClass({
 var util = require('util');
 var s3 = new AWS.S3();
 
+function getFileNameNoExtension(filename){
+    return filename.substr(0, filename.lastIndexOf('.'));
+}
+
 function notifySonicspan(fileName, context){
     var lambda = new AWS.Lambda({
         region: process.env.region
@@ -82,8 +86,8 @@ exports.handler = function(event, context) {
         return;
     }
     var imageType = typeMatch[1].toLowerCase();
-    if (imageType != "jpg" && imageType != "gif" && imageType != "png" &&
-        imageType != "eps") {
+    if (imageType != "jpg" && imageType != "jpeg" && imageType != "gif" && imageType != "png" &&
+        imageType != "eps" && imageType != "bmp" && imageType != "tiff") {
         console.log('skipping non-image ' + srcKey);
         return;
     }
@@ -182,7 +186,7 @@ exports.handler = function(event, context) {
                     //        index].destinationPath +
                     //    "/" + fileName.slice(0, -4) +
                     //    ".jpg",
-                    Key: "transcodedimages/" + fileName.slice(0, -4) + '_' +
+                    Key: "transcodedimages/" + getFileNameNoExtension(fileName) + '_' +
                     _sizesArray[index].destinationPath + ".jpg",
                     Body: data,
                     ContentType: 'JPG'
